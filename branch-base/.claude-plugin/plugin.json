@@ -1,0 +1,14 @@
+{
+  "name": "branch-base",
+  "version": "0.2.0",
+  "description": "Start new branches and PRs from your integration branch (origin/dev by default); ask which base when a repo has none",
+  "author": { "name": "blackironj" },
+  "userConfig": {
+    "baseBranch": {
+      "type": "string",
+      "title": "Base branch",
+      "description": "Remote branch new branches start from and PRs target when the command names none.",
+      "default": "dev"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+# Engine-written type declarations (regenerated on load)
+**/.claude-plugin/types/
+
+*.log
+.DS_Store
+node_modules/

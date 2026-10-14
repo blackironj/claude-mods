@@ -1,0 +1,6 @@
+{
+  "name": "secret-guard",
+  "version": "0.2.0",
+  "description": "Block Bash access to .env and Claude config files; mask tokens and keys in Bash and Read output",
+  "author": { "name": "blackironj" }
+}

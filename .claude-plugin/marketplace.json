@@ -1,0 +1,11 @@
+{
+  "name": "blackironj-mods",
+  "owner": { "name": "blackironj" },
+  "plugins": [
+    { "name": "prod-guard", "source": "./prod-guard" },
+    { "name": "secret-guard", "source": "./secret-guard" },
+    { "name": "branch-base", "source": "./branch-base" },
+    { "name": "read-only-lock", "source": "./read-only-lock" },
+    { "name": "deploy-watch", "source": "./deploy-watch" }
+  ]
+}

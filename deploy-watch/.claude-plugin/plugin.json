@@ -1,0 +1,7 @@
+{
+  "name": "deploy-watch",
+  "version": "0.2.0",
+  "description": "Watch GitHub Actions runs for the commit you pushed; /ci pane and a toast when they finish",
+  "author": { "name": "blackironj" },
+  "types": "./types/index.d.ts"
+}

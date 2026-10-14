@@ -1,0 +1,7 @@
+{
+  "name": "read-only-lock",
+  "version": "0.2.0",
+  "description": "After a look-only prompt (English or Korean), block edits and mutating commands until you unlock",
+  "author": { "name": "blackironj" },
+  "types": "./types/index.d.ts"
+}

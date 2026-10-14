@@ -1,0 +1,75 @@
+import { option, positionals, program, segments } from './shell'
+
+export type Policy = {
+  /** Kube contexts whose mutations need confirmation (also helm --kube-context). */
+  prodContexts: readonly string[]
+  /** Refuse kubectl mutations that name no --context. */
+  requireContext: boolean
+}
+
+export const DEFAULT_POLICY: Policy = { prodContexts: ['prod'], requireContext: true }
+
+export type Verdict =
+  | { kind: 'pass' }
+  | { kind: 'confirm'; why: string }
+  | { kind: 'handoff'; why: string }
+  | { kind: 'deny'; why: string }
+
+const KUBECTL_VALUED = [
+  '--context', '-n', '--namespace', '--kubeconfig', '--cluster', '--user', '-s', '--server',
+  '--token', '--as', '-c', '--container', '-o', '--output', '-f', '--filename', '-l', '--selector',
+]
+const KUBECTL_MUTATING = new Set([
+  'apply', 'create', 'delete', 'edit', 'patch', 'replace', 'scale', 'autoscale', 'drain', 'cordon',
+  'uncordon', 'taint', 'label', 'annotate', 'set', 'expose', 'run', 'exec', 'cp', 'debug',
+])
+const ROLLOUT_READS = new Set(['status', 'history'])
+const HELM_MUTATING = new Set(['install', 'upgrade', 'uninstall', 'delete', 'rollback'])
+const IAM_WRITE = /^(create|put|attach|detach|delete|update|add|remove|tag|untag|set|upload|change|reset|enable|deactivate)-/
+
+function kubectl(ws: string[], policy: Policy): Verdict {
+  const [verb = '', sub = ''] = positionals(ws, 1, KUBECTL_VALUED)
+  const isMutating = KUBECTL_MUTATING.has(verb) || (verb === 'rollout' && !ROLLOUT_READS.has(sub))
+  if (!isMutating) return { kind: 'pass' }
+  const context = option(ws, '--context')
+  if (context === undefined) {
+    return policy.requireContext
+      ? { kind: 'deny', why: `kubectl ${verb} has no explicit --context; add --context=<context> as the first argument` }
+      : { kind: 'pass' }
+  }
+  return policy.prodContexts.includes(context)
+    ? { kind: 'confirm', why: `kubectl ${verb}${verb === 'rollout' ? ` ${sub}` : ''} on ${context}` }
+    : { kind: 'pass' }
+}
+
+function helm(ws: string[], policy: Policy): Verdict {
+  if (!HELM_MUTATING.has(ws[1] ?? '')) return { kind: 'pass' }
+  const context = option(ws, '--kube-context')
+  if (context !== undefined && policy.prodContexts.includes(context)) return { kind: 'confirm', why: `helm ${ws[1]} on ${context}` }
+  if (context === undefined) return { kind: 'confirm', why: `helm ${ws[1]} without --kube-context (target cluster unknown)` }
+  return { kind: 'pass' }
+}
+
+function aws(ws: string[]): Verdict {
+  const [service, op] = positionals(ws, 1, ['--profile', '--region', '--output', '--query', '--endpoint-url'])
+  return service === 'iam' && op !== undefined && IAM_WRITE.test(op) ? { kind: 'confirm', why: `aws iam ${op}` } : { kind: 'pass' }
+}
+
+const RANK = { pass: 0, confirm: 1, handoff: 2, deny: 3 } as const
+
+/** The strictest verdict over every simple command in a Bash command line. */
+export function classify(command: string, policy: Policy = DEFAULT_POLICY): Verdict {
+  let worst: Verdict = { kind: 'pass' }
+  for (const seg of segments(command)) {
+    const ws = program(seg.words)
+    let v: Verdict = { kind: 'pass' }
+    if (ws[0] === 'kubectl') v = kubectl(ws, policy)
+    else if (ws[0] === 'helm') v = helm(ws, policy)
+    else if (ws[0] === 'aws') v = aws(ws)
+    else if (ws[0] === 'aws-vault' && (ws[1] === 'exec' || ws[1] === 'login')) {
+      v = { kind: 'handoff', why: `aws-vault ${ws[1]} needs your interactive session (MFA / keychain)` }
+    }
+    if (RANK[v.kind] > RANK[worst.kind]) worst = v
+  }
+  return worst
+}

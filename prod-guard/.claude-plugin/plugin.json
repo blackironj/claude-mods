@@ -1,0 +1,20 @@
+{
+  "name": "prod-guard",
+  "version": "0.2.0",
+  "description": "Confirm production kubectl/helm/IAM mutations before they run, require an explicit kube context, and hand aws-vault commands to you",
+  "author": { "name": "blackironj" },
+  "userConfig": {
+    "prodContexts": {
+      "type": "string",
+      "title": "Production contexts",
+      "description": "Comma-separated kube contexts whose mutating kubectl/helm commands need your confirmation.",
+      "default": "prod"
+    },
+    "requireContext": {
+      "type": "boolean",
+      "title": "Require --context",
+      "description": "Refuse mutating kubectl commands that do not name an explicit --context.",
+      "default": true
+    }
+  }
+}
