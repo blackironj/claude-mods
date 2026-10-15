@@ -75,7 +75,7 @@ export const register: Register = on => {
     const summary = summarize(w.runs)
     return (
       <Box flexDirection="column">
-        <Text bold>
+        <Text weight="bold">
           {w.branch} @ {w.sha.slice(0, 7)}
         </Text>
         <Text dimColor>{summary.text}</Text>
