@@ -15,7 +15,7 @@ They started as one person's setup and stay opinionated, but every personal valu
 | [`secret-guard`](secret-guard) | Blocks Bash and Read access to `.env` files (not `.env.example`) and to `~/.claude.json`. Masks JWTs, AWS/GitHub/Slack/Anthropic/OpenAI/Google keys and private key blocks in Bash and Read output before Claude sees them. |
 | [`branch-base`](branch-base) | Rewrites `git checkout -b`, `git switch -c` and `git worktree add` with no start point to start from `origin/<base>` after a fetch, and adds `--base <base>` to `gh pr create`. When a repo has no such branch, asks you which base to use (remembered per repo until reload). |
 | [`read-only-lock`](read-only-lock) | After a look-only prompt ("just investigate", "plan first, don't change anything", or Korean equivalents such as "확인만 해"), blocks file edits and mutating commands and shows a one-line band with an **Unlock** button. "go ahead", "apply it" or the button unlocks. |
-| [`deploy-watch`](deploy-watch) | After `git push`, `gh pr create` or `gh workflow run`, polls GitHub Actions for that commit every 30 s and raises a toast and a notification when the runs finish. Tells Claude not to poll CI with sleep loops. `/ci` opens a pane with the runs. |
+| [`deploy-watch`](deploy-watch) | After `git push` or `gh pr create`, polls GitHub Actions for that commit every 30 s; after `gh pr merge`, for the merge commit GitHub made on the base branch, where deploy workflows run (an auto-merge is followed until it lands); after `gh workflow run`, for the dispatched workflow. Raises a toast and a notification when the runs finish and adds the result to the conversation, so Claude knows without watching CI itself. `/ci` opens a pane with the runs. |
 
 ## Install
 
