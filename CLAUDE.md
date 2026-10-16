@@ -41,6 +41,10 @@ Type-check with `tsc -p <mod>` once the engine has laid `.claude-plugin/types/` 
 - Token-shaped test fixtures are assembled at run time (`'AK' + 'IA' + ...`) so scanners don't flag the repo.
 - Bump a mod's `version` in `plugin.json` when its behaviour changes.
 
+## Workflow
+
+Work directly in this working copy on `main`: no feature branches, worktrees or PRs. Once the checks pass, commit, push to `main`, and update the local install as below. This overrides the global "branch first" rule for this repo only.
+
 ## Installed copy
 
 The author installs from GitHub (`claude plugin marketplace add blackironj/claude-mods`), so sessions run what is on `main`, not whatever branch this working copy has checked out. Option values live in `~/.claude/settings.json` under `pluginConfigs`; removing the marketplace deletes them, so update in place instead of removing and re-adding.
