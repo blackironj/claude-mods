@@ -43,4 +43,7 @@ Type-check with `tsc -p <mod>` once the engine has laid `.claude-plugin/types/` 
 
 ## Installed copy
 
-The author installs from this working copy as a local folder marketplace, which reads the folder directly: after an edit, `/reload-plugins` in a session picks it up, no reinstall.
+The author installs from GitHub (`claude plugin marketplace add blackironj/claude-mods`), so sessions run what is on `main`, not whatever branch this working copy has checked out. Option values live in `~/.claude/settings.json` under `pluginConfigs`; removing the marketplace deletes them, so update in place instead of removing and re-adding.
+
+- Try an edit before it lands: `claude --plugin-dir ./<mod>` loads the working copy of that mod for one session.
+- After pushing to `main`: `claude plugin marketplace update blackironj-mods`, then `claude plugin update <mod>@blackironj-mods` for each mod whose `version` changed, and restart the session.
