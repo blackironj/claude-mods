@@ -55,20 +55,43 @@ function aws(ws: string[]): Verdict {
   return service === 'iam' && op !== undefined && IAM_WRITE.test(op) ? { kind: 'confirm', why: `aws iam ${op}` } : { kind: 'pass' }
 }
 
+const VAULT_VALUED = new Set([
+  '--backend', '--prompt', '--keychain', '--secret-service-collection', '--pass-dir', '--pass-cmd',
+  '--pass-prefix', '--file-dir', '-d', '--duration', '--region', '-t', '--mfa-token',
+])
+
+// `aws-vault exec <profile> -- <cmd>` runs non-interactively on a cached session, so the
+// wrapped command is judged like any other; only an interactive shell or login is handed off.
+function awsVault(ws: string[], policy: Policy): Verdict {
+  if (ws[1] === 'login') return { kind: 'handoff', why: 'aws-vault login opens the AWS console in your browser' }
+  if (ws[1] !== 'exec') return { kind: 'pass' }
+  let i = 2
+  for (let w = ws[i]; w !== undefined && w.startsWith('-') && w !== '--'; w = ws[i]) {
+    if (w === '--help') return { kind: 'pass' }
+    i += !w.includes('=') && VAULT_VALUED.has(w) ? 2 : 1
+  }
+  const rest = ws.slice(i + 1)
+  const inner = rest[0] === '--' ? rest.slice(1) : rest
+  return inner.length > 0
+    ? judge(program(inner), policy)
+    : { kind: 'handoff', why: 'aws-vault exec without a command opens an interactive shell' }
+}
+
+function judge(ws: string[], policy: Policy): Verdict {
+  if (ws[0] === 'kubectl') return kubectl(ws, policy)
+  if (ws[0] === 'helm') return helm(ws, policy)
+  if (ws[0] === 'aws') return aws(ws)
+  if (ws[0] === 'aws-vault') return awsVault(ws, policy)
+  return { kind: 'pass' }
+}
+
 const RANK = { pass: 0, confirm: 1, handoff: 2, deny: 3 } as const
 
 /** The strictest verdict over every simple command in a Bash command line. */
 export function classify(command: string, policy: Policy = DEFAULT_POLICY): Verdict {
   let worst: Verdict = { kind: 'pass' }
   for (const seg of segments(command)) {
-    const ws = program(seg.words)
-    let v: Verdict = { kind: 'pass' }
-    if (ws[0] === 'kubectl') v = kubectl(ws, policy)
-    else if (ws[0] === 'helm') v = helm(ws, policy)
-    else if (ws[0] === 'aws') v = aws(ws)
-    else if (ws[0] === 'aws-vault' && (ws[1] === 'exec' || ws[1] === 'login')) {
-      v = { kind: 'handoff', why: `aws-vault ${ws[1]} needs your interactive session (MFA / keychain)` }
-    }
+    const v = judge(program(seg.words), policy)
     if (RANK[v.kind] > RANK[worst.kind]) worst = v
   }
   return worst

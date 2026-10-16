@@ -11,7 +11,7 @@ They started as one person's setup and stay opinionated, but every personal valu
 
 | Mod | What it does |
 | --- | --- |
-| [`prod-guard`](prod-guard) | Holds mutating `kubectl`/`helm` commands against production contexts and `aws iam` writes until you confirm the exact command; a confirmed call skips the auto-mode classifier. Refuses mutating `kubectl` without an explicit `--context`. Puts `aws-vault exec` commands in your prompt box as `! …` instead of running them, since they need your interactive session. |
+| [`prod-guard`](prod-guard) | Holds mutating `kubectl`/`helm` commands against production contexts and `aws iam` writes until you confirm the exact command; a confirmed call skips the auto-mode classifier. Refuses mutating `kubectl` without an explicit `--context`. Judges the command inside `aws-vault exec <profile> -- …` by the same rules, and puts `aws-vault login` or a bare `aws-vault exec <profile>` (an interactive shell) in your prompt box as `! …` instead of running it. |
 | [`secret-guard`](secret-guard) | Blocks Bash and Read access to `.env` files (not `.env.example`) and to `~/.claude.json`. Masks JWTs, AWS/GitHub/Slack/Anthropic/OpenAI/Google keys and private key blocks in Bash and Read output before Claude sees them. |
 | [`branch-base`](branch-base) | Rewrites `git checkout -b`, `git switch -c` and `git worktree add` with no start point to start from `origin/<base>` after a fetch, and adds `--base <base>` to `gh pr create`. When a repo has no such branch, asks you which base to use (remembered per repo until reload). |
 | [`read-only-lock`](read-only-lock) | After a look-only prompt ("just investigate", "plan first, don't change anything", or Korean equivalents such as "확인만 해"), blocks file edits and mutating commands and shows a one-line band with an **Unlock** button. "go ahead", "apply it" or the button unlocks. |
@@ -53,6 +53,7 @@ Set them on the install screen, or change them later in `/config`.
 - `secret-guard` also blocks commands that create a `.env` (for example `cp .env.example .env`); run those yourself. Masking covers the token shapes listed above, not arbitrary passwords.
 - `branch-base` does not affect worktrees Claude Code creates on its own (`EnterWorktree`).
 - `prod-guard` lets a call you confirmed run even where a permission rule or the auto-mode classifier would stop it, and its `aws-vault` handoff puts a command Claude wrote into your prompt box: a `!` command runs in your shell with no permission check, so read it before pressing Enter.
+- `prod-guard` lets `aws-vault exec <profile> -- …` run in Claude's shell, which has no terminal for prompts. When the session needs an MFA code or a key-store passphrase, the command fails; run one `aws-vault` command yourself with `!` to refresh the session.
 
 ## Development
 
