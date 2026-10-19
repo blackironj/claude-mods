@@ -28,12 +28,14 @@ export const register: Register = (on, options) => {
       case 'deny':
         return { deny: `prod-guard: ${verdict.why}.` }
       case 'handoff': {
-        const filled = await $.prompt.fill({ text: `! ${e.command}`, mode: 'replace' })
-        $.ui.toast(filled.isFilled ? 'prod-guard: review the command in your prompt box, then press Enter to run it' : 'prod-guard: run the aws-vault command yourself with !')
+        // Fill only an empty prompt box: replacing would throw away what the user was typing.
+        const isFilled =
+          (await $.prompt.read()).text.trim() === '' && (await $.prompt.fill({ text: `! ${e.command}`, mode: 'replace' })).isFilled
+        $.ui.toast(isFilled ? 'prod-guard: review the command in your prompt box, then press Enter to run it' : 'prod-guard: run the aws-vault command yourself with !')
         return {
           deny:
             `prod-guard: ${verdict.why}, so it was handed to the user` +
-            (filled.isFilled ? ' (placed in their prompt box as a `!` command)' : '') +
+            (isFilled ? ' (placed in their prompt box as a `!` command)' : '') +
             '. Do not retry or work around it. End your turn now with no further tool calls, and show the user ' +
             'this exact line to run, in a code block, `!` included:\n\n' +
             `! ${e.command}\n\n` +
