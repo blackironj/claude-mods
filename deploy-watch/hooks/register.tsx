@@ -33,9 +33,9 @@ function noteFor(w: Watch): string {
     : `${w.branch}@${w.sha.slice(0, 7)}`
   return (
     `deploy-watch is now tracking GitHub Actions for ${target}. When the runs finish it notifies the user ` +
-    '(toast and system notification) and adds the result to this conversation. Do not watch or poll this CI ' +
-    'yourself (no `gh run watch`, no sleep loops); if the user asks to be told when it finishes, say deploy-watch ' +
-    'will notify them. The user can open the /ci pane.'
+    '(toast and system notification) and sends you the result as a new message that starts a turn. Do not watch ' +
+    'or poll this CI yourself (no `gh run watch`, no sleep loops). If your next step depends on this CI, say so to ' +
+    'the user and end your turn; continue when the result arrives. The user can open the /ci pane.'
   )
 }
 
@@ -80,12 +80,14 @@ async function watchFor($: EngineInterface, t: Trigger, branchBefore: string | u
   return { ...base, branch: view?.baseRefName ?? '', sha: '', pr }
 }
 
-/** Tells the person (toast, system notification) and the model (a row it reads next turn). */
+/** Tells the person (toast, system notification) and the model (a prompt that starts a turn once the session is idle). */
 async function announce($: EngineInterface, text: string) {
   $.ui.toast(text, { timeoutMs: 15_000 })
   await $.ui.notify(text, { title: 'CI' })
-  await $.session.append({
-    message: { type: 'user', content: [{ type: 'text', text: `deploy-watch: ${text}. The user has already been notified.` }] },
+  await $.prompt.submit({
+    text:
+      `deploy-watch: ${text}. Tell the user this result in one line, then continue any work that was waiting on ` +
+      'this CI; if a run failed, look at why before going on.',
   })
 }
 
