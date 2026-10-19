@@ -1,6 +1,6 @@
 {
   "name": "deploy-watch",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Watch GitHub Actions runs for the commit you pushed or merged; /ci pane and a toast when they finish",
   "author": { "name": "blackironj" },
   "types": "./types/index.d.ts"

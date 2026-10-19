@@ -80,15 +80,38 @@ async function watchFor($: EngineInterface, t: Trigger, branchBefore: string | u
   return { ...base, branch: view?.baseRefName ?? '', sha: '', pr }
 }
 
-/** Tells the person (toast, system notification) and the model (a prompt that starts a turn once the session is idle). */
-async function announce($: EngineInterface, text: string) {
+/**
+ * Tells the person (toast, system notification) and the model: by default a
+ * prompt that starts a turn once the session is idle; with `wake: false` a row
+ * it reads next turn, for results nothing is waiting on.
+ */
+async function announce($: EngineInterface, text: string, { wake = true } = {}) {
   $.ui.toast(text, { timeoutMs: 15_000 })
   await $.ui.notify(text, { title: 'CI' })
+  if (!wake) {
+    await $.session.append({
+      message: { type: 'user', content: [{ type: 'text', text: `deploy-watch: ${text}. The user has already been notified.` }] },
+    })
+    return
+  }
   await $.prompt.submit({
     text:
       `deploy-watch: ${text}. Tell the user this result in one line, then continue any work that was waiting on ` +
       'this CI; if a run failed, look at why before going on.',
   })
+}
+
+/**
+ * Marks `w` done with `patch`. True only for the call that did, so two polls
+ * that overlap (the timer and /ci) announce the result once.
+ */
+async function finish($: EngineInterface, w: Watch, patch: Partial<Watch>): Promise<boolean> {
+  let isFirst = false
+  await update($, watch, cur => {
+    isFirst = cur !== null && cur.startedAt === w.startedAt && !cur.isDone
+    return cur !== null && isFirst ? { ...cur, ...patch, isDone: true } : cur
+  })
+  return isFirst
 }
 
 /** A PR not merged yet: switch to its merge commit once merged, stop when closed or after an hour. */
@@ -101,7 +124,7 @@ async function pollMerge($: EngineInterface, w: Watch, pr: string, now: number) 
     return
   }
   if (view.state !== 'CLOSED' && now - w.startedAt <= MERGE_GIVE_UP_MS) return
-  await update($, watch, cur => (cur?.startedAt === w.startedAt ? { ...cur, isDone: true } : cur))
+  if (!(await finish($, w, {}))) return
   await announce($, view.state === 'CLOSED' ? `PR ${pr} was closed without merging` : `PR ${pr} did not merge within 60 min`)
 }
 
@@ -122,8 +145,13 @@ async function poll($: EngineInterface) {
   const summary = summarize(runs)
   const isStale = runs.length === 0 && now - w.startedAt > GIVE_UP_MS
 
-  await update($, watch, cur => (cur?.startedAt === w.startedAt ? { ...cur, runs, isDone: summary.isDone || isStale } : cur))
-  if (summary.isDone || isStale) await announce($, isStale ? `No CI runs appeared for ${label(w)} in 10 min` : `${summary.text} · ${label(w)}`)
+  if (!summary.isDone && !isStale) {
+    await update($, watch, cur => (cur?.startedAt === w.startedAt && !cur.isDone ? { ...cur, runs } : cur))
+    return
+  }
+  if (!(await finish($, w, { runs }))) return
+  if (isStale) await announce($, `No CI runs appeared for ${label(w)} in 10 min`, { wake: false })
+  else await announce($, `${summary.text} · ${label(w)}`)
 }
 
 async function branchIn($: EngineInterface, dir: string): Promise<string | undefined> {
