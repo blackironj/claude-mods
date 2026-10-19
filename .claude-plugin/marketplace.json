@@ -6,6 +6,7 @@
     { "name": "secret-guard", "source": "./secret-guard" },
     { "name": "branch-base", "source": "./branch-base" },
     { "name": "read-only-lock", "source": "./read-only-lock" },
-    { "name": "deploy-watch", "source": "./deploy-watch" }
+    { "name": "deploy-watch", "source": "./deploy-watch" },
+    { "name": "approve-blocked", "source": "./approve-blocked" }
   ]
 }

@@ -1,0 +1,6 @@
+{
+  "name": "approve-blocked",
+  "version": "0.1.0",
+  "description": "When the auto-mode classifier blocks a Bash command, ask you Run or Don't run instead of having Claude tell you to run it with !",
+  "author": { "name": "blackironj" }
+}
