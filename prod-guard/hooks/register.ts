@@ -34,7 +34,10 @@ export const register: Register = (on, options) => {
           deny:
             `prod-guard: ${verdict.why}, so it was handed to the user` +
             (filled.isFilled ? ' (placed in their prompt box as a `!` command)' : '') +
-            '. Do not retry it; wait for the user to run it and share the output.',
+            '. Do not retry or work around it. End your turn now with no further tool calls, and show the user ' +
+            'this exact line to run, in a code block, `!` included:\n\n' +
+            `! ${e.command}\n\n` +
+            'Its output lands in this conversation when they run it; a `!` command typed while you are still working does not run.',
         }
       }
       case 'confirm': {
