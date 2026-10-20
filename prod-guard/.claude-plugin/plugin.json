@@ -1,6 +1,6 @@
 {
   "name": "prod-guard",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "Confirm production kubectl/helm/IAM mutations before they run (also inside aws-vault exec), require an explicit kube context, and hand interactive aws-vault commands to you",
   "author": { "name": "blackironj" },
   "userConfig": {

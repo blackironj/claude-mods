@@ -25,6 +25,7 @@ const KUBECTL_MUTATING = new Set([
 ])
 const ROLLOUT_READS = new Set(['status', 'history'])
 const HELM_MUTATING = new Set(['install', 'upgrade', 'uninstall', 'delete', 'rollback'])
+const HELM_VALUED = ['--kube-context', '-n', '--namespace', '--kubeconfig', '--kube-apiserver', '--kube-as-user', '--kube-token', '--registry-config', '--repository-cache', '--repository-config', '--burst-limit', '--qps']
 const IAM_WRITE = /^(create|put|attach|detach|delete|update|add|remove|tag|untag|set|upload|change|reset|enable|deactivate)-/
 
 function kubectl(ws: string[], policy: Policy): Verdict {
@@ -43,10 +44,12 @@ function kubectl(ws: string[], policy: Policy): Verdict {
 }
 
 function helm(ws: string[], policy: Policy): Verdict {
-  if (!HELM_MUTATING.has(ws[1] ?? '')) return { kind: 'pass' }
+  // Global flags may come before the subcommand: `helm --kube-context prod -n ns uninstall x`.
+  const [sub = ''] = positionals(ws, 1, HELM_VALUED)
+  if (!HELM_MUTATING.has(sub)) return { kind: 'pass' }
   const context = option(ws, '--kube-context')
-  if (context !== undefined && policy.prodContexts.includes(context)) return { kind: 'confirm', why: `helm ${ws[1]} on ${context}` }
-  if (context === undefined) return { kind: 'confirm', why: `helm ${ws[1]} without --kube-context (target cluster unknown)` }
+  if (context !== undefined && policy.prodContexts.includes(context)) return { kind: 'confirm', why: `helm ${sub} on ${context}` }
+  if (context === undefined) return { kind: 'confirm', why: `helm ${sub} without --kube-context (target cluster unknown)` }
   return { kind: 'pass' }
 }
 

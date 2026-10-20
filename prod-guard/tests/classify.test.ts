@@ -36,6 +36,13 @@ test('IAM writes need confirmation', () => {
   expect(classify('helm upgrade api ./chart --kube-context prod').kind).toBe('confirm')
 })
 
+test('helm global flags before the subcommand are skipped', () => {
+  expect(classify('helm --kube-context prod -n kube-system uninstall sealed-secrets --wait').kind).toBe('confirm')
+  expect(classify('helm --kube-context=prod upgrade api ./chart').kind).toBe('confirm')
+  expect(classify('helm --kube-context prod list -A').kind).toBe('pass')
+  expect(classify('helm --kube-context beta -n api rollback api 3').kind).toBe('pass')
+})
+
 test('prodContexts and requireContext come from the policy', () => {
   const policy = { prodContexts: ['prod-eu', 'prod-us'], requireContext: false }
   expect(classify('kubectl --context=prod-eu apply -f x.yaml', policy).kind).toBe('confirm')
