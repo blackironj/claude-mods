@@ -68,10 +68,12 @@ export const register: Register = (on, options) => {
     next.called ? next(e) : { deny: 'prod-guard: the guard failed or the question was dismissed; the command did not run.' },
   )
 
-  on('tool.check', { tool: 'Bash' }, ($, e, next) => {
+  on('tool.check', { tool: 'Bash' }, async ($, e, next) => {
+    const verdict = await next(e)
     const command = (e.input as { command?: string }).command ?? ''
-    return confirmed.has(command)
+    // Only the classifier's question is answered for the user: a settings deny rule still stands.
+    return confirmed.has(command) && verdict.decision === 'ask'
       ? { decision: 'allow', reason: 'prod-guard: confirmed by the user' }
-      : next(e)
+      : verdict
   })
 }

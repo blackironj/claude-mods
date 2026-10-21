@@ -66,3 +66,20 @@ test('a prod mutation the user declines does not run', async ($, on) => {
   expect(result.deny).toBeDefined()
   expect(ran).toBe(false)
 })
+
+test('a confirmed prod mutation skips the classifier but not a deny rule', async ($, on) => {
+  const decisions: string[] = []
+  let core: 'ask' | 'deny' = 'ask'
+  on('tool.call', { tool: 'AskUserQuestion' }, (_, e) => ({ result: { answers: { [e.questions[0]?.question ?? '']: 'Run' } } }))
+  on('tool.check', { tool: 'Bash' }, () => ({ decision: core }))
+  on('tool.call', { tool: 'Bash' }, async (_, e) => {
+    for (const decision of ['ask', 'deny'] as const) {
+      core = decision
+      decisions.push((await $.tool.check({ tool: 'Bash', input: { command: e.command } })).decision)
+    }
+    return { result: { stdout: '', stderr: '', interrupted: false } }
+  })
+
+  await $.tool.call({ tool: 'Bash', command: 'kubectl --context=prod delete pod x' })
+  expect(decisions).toEqual(['allow', 'deny'])
+})
